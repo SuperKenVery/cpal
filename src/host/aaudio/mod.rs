@@ -379,33 +379,39 @@ where
     Ok(Stream::Output(Arc::new(Mutex::new(stream))))
 }
 
-impl DeviceTrait for Device {
-    type SupportedInputConfigs = SupportedInputConfigs;
-    type SupportedOutputConfigs = SupportedOutputConfigs;
-    type Stream = Stream;
-
-    fn name(&self) -> Result<String, DeviceNameError> {
+impl Device {
+    fn device_name(&self) -> String {
         match &self.0 {
-            None => Ok("default".to_string()),
+            None => "default".to_string(),
             Some(info) => {
-                let name = if info.address.is_empty() {
+                if info.address.is_empty() {
                     format!("{}:{:?}", info.product_name, info.device_type)
                 } else {
                     format!(
                         "{}:{:?}:{}",
                         info.product_name, info.device_type, info.address
                     )
-                };
-                Ok(name)
+                }
             }
         }
     }
+}
+
+impl DeviceTrait for Device {
+    type SupportedInputConfigs = SupportedInputConfigs;
+    type SupportedOutputConfigs = SupportedOutputConfigs;
+    type Stream = Stream;
+
+    fn name(&self) -> Result<String, DeviceNameError> {
+        Ok(self.device_name())
+    }
 
     fn description(&self) -> Result<DeviceDescription, DeviceNameError> {
+        let name = self.device_name();
         match &self.0 {
-            None => Ok(DeviceDescriptionBuilder::new("Default Device".to_string()).build()),
+            None => Ok(DeviceDescriptionBuilder::new(name).build()),
             Some(info) => {
-                let mut builder = DeviceDescriptionBuilder::new(info.product_name.clone())
+                let mut builder = DeviceDescriptionBuilder::new(name)
                     .device_type(info.device_type.into())
                     .interface_type(info.device_type.into())
                     .direction(info.direction);
